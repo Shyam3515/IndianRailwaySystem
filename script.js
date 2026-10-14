@@ -6,7 +6,7 @@ const trains = [
     to: "Visakhapatnam",
     time: "17:30",
     fare: 420,
-    seats: 24,
+    seats: 1,
   },
   {
     id: "12760",
@@ -15,7 +15,7 @@ const trains = [
     to: "Chennai",
     time: "18:10",
     fare: 510,
-    seats: 18,
+    seats: 1,
   },
   {
     id: "17210",
@@ -24,7 +24,7 @@ const trains = [
     to: "Visakhapatnam",
     time: "08:45",
     fare: 280,
-    seats: 30,
+    seats: 0,
   },
   {
     id: "12622",
@@ -33,7 +33,7 @@ const trains = [
     to: "Hyderabad",
     time: "21:00",
     fare: 560,
-    seats: 16,
+    seats: 0,
   },
   {
     id: "12864",
@@ -42,7 +42,7 @@ const trains = [
     to: "Vijayawada",
     time: "06:15",
     fare: 310,
-    seats: 22,
+    seats: 0,
   },
   {
     id: "12714",
@@ -51,18 +51,22 @@ const trains = [
     to: "Hyderabad",
     time: "14:20",
     fare: 350,
-    seats: 20,
+    seats: 0,
   },
 ];
+
 const key = "irrs_railvista_bookings_v1";
 let bookings = [];
+
 try {
   bookings = JSON.parse(localStorage.getItem(key) || "[]");
   if (!Array.isArray(bookings)) bookings = [];
 } catch (e) {
   bookings = [];
 }
+
 const $ = (id) => document.getElementById(id);
+
 const safe = (s) =>
   String(s).replace(
     /[&<>"']/g,
@@ -75,18 +79,34 @@ const safe = (s) =>
         "'": "&#39;",
       })[c],
   );
+
 const save = () => localStorage.setItem(key, JSON.stringify(bookings));
+
 const active = (b) => b.status === "CONFIRMED";
-const available = (t) =>
-  t.seats - bookings.filter((b) => b.trainId === t.id && active(b)).length;
+
+// Waiting-list tickets do not occupy confirmed seats.
+const available = (t, date, travelClass) =>
+  t.seats -
+  bookings.filter(
+    (b) =>
+      b.trainId === t.id &&
+      b.status === "CONFIRMED" &&
+      (!date || b.date === date) &&
+      (!travelClass || b.travelClass === travelClass),
+  ).length;
+
 const money = (n) => "₹" + Number(n).toLocaleString("en-IN");
+
+// Navigation
 function go(page) {
   document
     .querySelectorAll(".section")
     .forEach((e) => e.classList.toggle("active", e.id === page));
+
   document
     .querySelectorAll(".nav")
     .forEach((e) => e.classList.toggle("active", e.dataset.page === page));
+
   $("heading").textContent = {
     overview: "Dashboard Overview",
     trains: "Search Trains",
@@ -94,51 +114,118 @@ function go(page) {
     bookings: "Booking History",
     pnr: "PNR Enquiry",
   }[page];
+
   render();
   window.scrollTo(0, 0);
 }
+
 document
   .querySelectorAll(".nav")
   .forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
+
+// Populate station dropdowns
 const stations = [...new Set(trains.flatMap((t) => [t.from, t.to]))].sort();
+
 for (const id of ["searchFrom", "searchTo"]) {
   $(id).innerHTML =
     '<option value="">All stations</option>' +
-    stations.map((s) => `<option>${s}</option>`).join("");
+    stations
+      .map((s) => `<option value="${safe(s)}">${safe(s)}</option>`)
+      .join("");
 }
+
+// Render dashboard
 function render() {
   const confirmed = bookings.filter(active);
+
   $("trainCount").textContent = trains.length;
   $("totalBookings").textContent = bookings.length;
   $("confirmedCount").textContent = confirmed.length;
-  $("seatCount").textContent = trains.reduce((n, t) => n + available(t), 0);
+
+  const selectedDate = $("journeyDate")?.value;
+  const selectedClass = $("travelClass")?.value;
+
+  $("seatCount").textContent = trains.reduce(
+    (n, t) => n + available(t, selectedDate, selectedClass),
+    0,
+  );
+
   $("routes").innerHTML = trains
     .slice(0, 4)
     .map(
-      (t) =>
-        `<div class="route"><div><b>${safe(t.from)} → ${safe(t.to)}</b><br><small>${safe(t.name)}</small></div><span class="tag">${available(t)} seats</span></div>`,
+      (t) => `
+        <div class="route">
+          <div>
+            <b>${safe(t.from)} → ${safe(t.to)}</b><br>
+            <small>${safe(t.name)}</small>
+          </div>
+          <span class="tag">
+            ${available(t, selectedDate, selectedClass)} seats
+          </span>
+        </div>
+      `,
     )
     .join("");
+
+  const previousTrain = $("bookTrain").value;
+
   $("bookTrain").innerHTML = trains
     .map(
-      (t) =>
-        `<option value="${t.id}">${safe(t.name)} · ${safe(t.from)} → ${safe(t.to)}</option>`,
+      (t) => `
+        <option value="${t.id}">
+          ${safe(t.name)} · ${safe(t.from)} → ${safe(t.to)}
+        </option>
+      `,
     )
     .join("");
+
+  if (trains.some((t) => t.id === previousTrain)) {
+    $("bookTrain").value = previousTrain;
+  }
+
   renderTrains(trains);
   renderBookings();
   updateFare();
 }
+
+// Search and display trains
 function renderTrains(list) {
   $("trainRows").innerHTML = list.length
     ? list
-        .map(
-          (t) =>
-            `<tr><td><b>${safe(t.name)}</b><br><span class="muted">#${t.id}</span></td><td>${safe(t.from)} → ${safe(t.to)}</td><td>${t.time}</td><td>${money(t.fare)}</td><td><span class="tag">${available(t)} left</span></td><td><button class="secondary" onclick="chooseTrain('${t.id}')">Book</button></td></tr>`,
-        )
+        .map((t) => {
+          const seats = available(
+            t,
+            $("journeyDate").value,
+            $("travelClass").value,
+          );
+
+          return `
+            <tr>
+              <td>
+                <b>${safe(t.name)}</b><br>
+                <span class="muted">#${safe(t.id)}</span>
+              </td>
+              <td>${safe(t.from)} → ${safe(t.to)}</td>
+              <td>${safe(t.time)}</td>
+              <td>${money(t.fare)}</td>
+              <td>
+                <span class="tag">
+                  ${seats > 0 ? `${seats} left` : "WL available"}
+                </span>
+              </td>
+              <td>
+                <button class="secondary"
+                  onclick="chooseTrain('${t.id}')">
+                  Book
+                </button>
+              </td>
+            </tr>
+          `;
+        })
         .join("")
     : '<tr><td colspan="6">No matching demo trains found.</td></tr>';
 }
+
 function searchTrains() {
   renderTrains(
     trains.filter(
@@ -148,41 +235,79 @@ function searchTrains() {
     ),
   );
 }
+
 function resetSearch() {
   $("searchFrom").value = "";
   $("searchTo").value = "";
   renderTrains(trains);
 }
+
 function chooseTrain(id) {
   go("book");
   $("bookTrain").value = id;
   updateFare();
 }
+
+// Fare calculation
 function updateFare() {
   const t = trains.find((t) => t.id === $("bookTrain").value);
+
   $("fareEstimate").value = t
     ? money(t.fare * ($("travelClass").value === "3A" ? 2 : 1))
     : "—";
 }
+
 $("bookTrain").addEventListener("change", updateFare);
-$("travelClass").addEventListener("change", updateFare);
+$("travelClass").addEventListener("change", () => {
+  updateFare();
+  renderTrains(trains);
+});
+
+// Journey date defaults
 const today = new Date();
-const yyyy = today.getFullYear(),
-  mm = String(today.getMonth() + 1).padStart(2, "0"),
-  dd = String(today.getDate()).padStart(2, "0");
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, "0");
+const dd = String(today.getDate()).padStart(2, "0");
+
 $("journeyDate").min = `${yyyy}-${mm}-${dd}`;
-$("journeyDate").value = $("journeyDate").min;
+
+if (!$("journeyDate").value || $("journeyDate").value < $("journeyDate").min) {
+  $("journeyDate").value = $("journeyDate").min;
+}
+
+$("journeyDate").addEventListener("change", () => {
+  renderTrains(trains);
+  updateFare();
+});
+
+// Display messages
 function notice(id, msg, error = false) {
   const el = $(id);
   el.textContent = msg;
   el.className = "notice" + (error ? " error" : "");
   el.style.display = "block";
 }
+
+// Generate a unique PNR
+function generatePNR() {
+  let pnr;
+
+  do {
+    pnr = String(Math.floor(1000000000 + Math.random() * 9000000000));
+  } while (bookings.some((b) => b.pnr === pnr));
+
+  return pnr;
+}
+
+// BOOK TICKET: CONFIRMED OR WAITING LIST
 function bookTicket() {
-  const name = $("passenger").value.trim(),
-    age = Number($("age").value),
-    date = $("journeyDate").value,
-    t = trains.find((t) => t.id === $("bookTrain").value);
+  const name = $("passenger").value.trim();
+  const age = Number($("age").value);
+  const date = $("journeyDate").value;
+  const travelClass = $("travelClass").value;
+
+  const t = trains.find((t) => t.id === $("bookTrain").value);
+
   if (
     !name ||
     name.length < 2 ||
@@ -200,62 +325,190 @@ function bookTicket() {
     );
     return;
   }
-  if (available(t) <= 0) {
-    notice("bookNotice", "No seats are available on this demo train.", true);
-    return;
-  }
-  let pnr;
-  do {
-    pnr = String(Math.floor(1000000000 + Math.random() * 9000000000));
-  } while (bookings.some((b) => b.pnr === pnr));
-  bookings.unshift({
+
+  // Check seats for this train, date and class.
+  const seatsLeft = available(t, date, travelClass);
+
+  // Find the current waiting-list count.
+  const waitingCount = bookings.filter(
+    (b) =>
+      b.trainId === t.id &&
+      b.date === date &&
+      b.travelClass === travelClass &&
+      b.status.startsWith("WL"),
+  ).length;
+
+  // Allocate confirmed status or waiting-list status.
+  const status = seatsLeft > 0 ? "CONFIRMED" : `WL${waitingCount + 1}`;
+
+  const pnr = generatePNR();
+
+  const booking = {
     pnr,
     name,
     age,
     trainId: t.id,
     date,
-    travelClass: $("travelClass").value,
-    fare: t.fare * ($("travelClass").value === "3A" ? 2 : 1),
-    status: "CONFIRMED",
-  });
+    travelClass,
+    fare: t.fare * (travelClass === "3A" ? 2 : 1),
+    status,
+  };
+
+  bookings.unshift(booking);
   save();
-  notice(
-    "bookNotice",
-    `Booking confirmed! Demo PNR: ${pnr}. Open My Bookings to view your ticket.`,
-  );
+
+  if (status === "CONFIRMED") {
+    notice("bookNotice", `Booking confirmed! PNR: ${pnr}. Status: CONFIRMED.`);
+  } else {
+    notice(
+      "bookNotice",
+      `No confirmed seats available. Your ticket is ${status}. PNR: ${pnr}.`,
+    );
+  }
+
   $("passenger").value = "";
   $("age").value = "";
+
   render();
 }
+
+// Booking history
 function renderBookings() {
   $("bookingRows").innerHTML = bookings.length
     ? bookings
         .map((b) => {
           const t = trains.find((t) => t.id === b.trainId);
-          return `<tr><td><b>${safe(b.pnr)}</b></td><td>${safe(b.name)}</td><td>${safe(t?.name || b.trainId)}</td><td>${safe(b.date)}</td><td>${money(b.fare)}</td><td><span class="tag ${active(b) ? "" : "cancelled"}">${b.status}</span></td><td>${active(b) ? `<button class="danger" onclick="cancelTicket('${b.pnr}')">Cancel</button>` : "—"}</td></tr>`;
+
+          const isConfirmed = b.status === "CONFIRMED";
+          const isWaiting = b.status.startsWith("WL");
+
+          const statusClass = isConfirmed
+            ? ""
+            : isWaiting
+              ? "waiting"
+              : "cancelled";
+
+          return `
+            <tr>
+              <td><b>${safe(b.pnr)}</b></td>
+              <td>${safe(b.name)}</td>
+              <td>${safe(t?.name || b.trainId)}</td>
+              <td>${safe(b.date)}</td>
+              <td>${money(b.fare)}</td>
+              <td>
+                <span class="tag ${statusClass}">
+                  ${safe(b.status)}
+                </span>
+              </td>
+              <td>
+                ${
+                  isConfirmed || isWaiting
+                    ? `<button class="danger"
+                        onclick="cancelTicket('${b.pnr}')">
+                        Cancel
+                      </button>`
+                    : "—"
+                }
+              </td>
+            </tr>
+          `;
         })
         .join("")
     : '<tr><td colspan="7">No bookings yet. Create your first demo ticket.</td></tr>';
 }
+
+// Cancellation and waiting-list promotion
 function cancelTicket(pnr) {
   const b = bookings.find((b) => b.pnr === pnr);
-  if (!b || !active(b)) return;
-  if (!confirm(`Cancel demo booking ${pnr}?`)) return;
+
+  if (!b || (!active(b) && !b.status.startsWith("WL"))) {
+    return;
+  }
+
+  if (!confirm(`Cancel demo booking ${pnr}?`)) {
+    return;
+  }
+
+  const wasConfirmed = b.status === "CONFIRMED";
+
   b.status = "CANCELLED";
   save();
+
+  // Promote the earliest waiting-list passenger
+  // if a confirmed seat was released.
+  if (wasConfirmed) {
+    promoteWaitingList(b.trainId, b.date, b.travelClass);
+  }
+
+  save();
   render();
-  notice("cancelNotice", `Demo booking ${pnr} cancelled. Seat released.`);
+
+  notice(
+    "cancelNotice",
+    wasConfirmed
+      ? `Booking ${pnr} cancelled. The next eligible waiting-list passenger has been promoted if available.`
+      : `Waiting-list booking ${pnr} cancelled.`,
+  );
 }
+
+function promoteWaitingList(trainId, date, travelClass) {
+  const nextWaiting = bookings
+    .filter(
+      (b) =>
+        b.trainId === trainId &&
+        b.date === date &&
+        b.travelClass === travelClass &&
+        b.status.startsWith("WL"),
+    )
+    .sort((a, b) => {
+      const aNumber = Number(a.status.slice(2));
+      const bNumber = Number(b.status.slice(2));
+      return aNumber - bNumber;
+    })[0];
+
+  if (nextWaiting) {
+    nextWaiting.status = "CONFIRMED";
+  }
+}
+
+// PNR enquiry
 function checkPNR() {
-  const pnr = $("pnrInput").value.trim(),
-    b = bookings.find((b) => b.pnr === pnr);
+  const pnr = $("pnrInput").value.trim();
+
+  const b = bookings.find((b) => b.pnr === pnr);
+
   if (!b) {
     $("pnrResult").innerHTML =
       '<p class="muted">No demo booking found for that PNR.</p>';
     return;
   }
+
   const t = trains.find((t) => t.id === b.trainId);
-  $("pnrResult").innerHTML =
-    `<div class="panel" style="background:#f7fafc"><h3>Ticket ${safe(b.pnr)} <span class="tag ${active(b) ? "" : "cancelled"}">${b.status}</span></h3><p><b>Passenger:</b> ${safe(b.name)} (${b.age})</p><p><b>Train:</b> ${safe(t?.name || b.trainId)}</p><p><b>Route:</b> ${safe(t?.from || "")} → ${safe(t?.to || "")}</p><p><b>Journey:</b> ${safe(b.date)} · ${safe(b.travelClass)}</p><p><b>Fare:</b> ${money(b.fare)}</p></div>`;
+
+  const statusClass =
+    b.status === "CONFIRMED"
+      ? ""
+      : b.status.startsWith("WL")
+        ? "waiting"
+        : "cancelled";
+
+  $("pnrResult").innerHTML = `
+    <div class="panel" style="background:#f7fafc">
+      <h3>
+        Ticket ${safe(b.pnr)}
+        <span class="tag ${statusClass}">
+          ${safe(b.status)}
+        </span>
+      </h3>
+      <p><b>Passenger:</b> ${safe(b.name)} (${b.age})</p>
+      <p><b>Train:</b> ${safe(t?.name || b.trainId)}</p>
+      <p><b>Route:</b> ${safe(t?.from || "")} → ${safe(t?.to || "")}</p>
+      <p><b>Journey:</b> ${safe(b.date)} · ${safe(b.travelClass)}</p>
+      <p><b>Fare:</b> ${money(b.fare)}</p>
+      <p><b>Status:</b> ${safe(b.status)}</p>
+    </div>
+  `;
 }
+
+// Initial page render
 render();

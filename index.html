@@ -3,112 +3,161 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RailOG | IRRS Demonstration</title>
-    <link rel="icon" href="favicon.svg" />
+
+    <title>RailOG | Indian Railway Reservation System</title>
+
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body>
     <div class="shell">
+      <!-- Sidebar Navigation -->
       <aside class="side">
         <div class="brand">Rail<span>OG</span></div>
+
         <button class="nav active" data-page="overview">
-          ▦ &nbsp; Overview</button
-        ><button class="nav" data-page="trains">🚆 &nbsp; Search Trains</button
-        ><button class="nav" data-page="book">▣ &nbsp; Book Ticket</button
-        ><button class="nav" data-page="bookings">◷ &nbsp; My Bookings</button
-        ><button class="nav" data-page="pnr">⌕ &nbsp; PNR Enquiry</button>
+          ▦ &nbsp; Overview
+        </button>
+
+        <button class="nav" data-page="trains">🚆 &nbsp; Search Trains</button>
+
+        <button class="nav" data-page="book">▣ &nbsp; Book Ticket</button>
+
+        <button class="nav" data-page="bookings">◷ &nbsp; My Bookings</button>
+
+        <button class="nav" data-page="pnr">⌕ &nbsp; PNR Enquiry</button>
+
         <div class="aside-note">
-          ACADEMIC PROJECT DEMO<br />Fictional trains & fares<br />No live
-          railway integration
+          ACADEMIC PROJECT DEMO<br />
+          Fictional trains & fares<br />
+          No live railway integration
         </div>
       </aside>
+
+      <!-- Main Content -->
       <main class="main">
+        <!-- Header -->
         <div class="top">
           <div>
             <div class="eyebrow">Indian Railway Reservation System</div>
             <h1 id="heading">Dashboard Overview</h1>
           </div>
+
           <span class="pill">● Demo Mode</span>
         </div>
+
+        <!-- Dashboard -->
         <section id="overview" class="section active">
           <div class="hero">
             <div>
               <div class="eyebrow" style="color: #a9f4e9">Welcome aboard</div>
+
               <h2>Smarter journeys start here.</h2>
+
               <p>
-                Search trains, reserve seats and manage tickets in one place.
+                Search trains, reserve seats, check waiting-list status and
+                manage tickets in one place.
               </p>
             </div>
+
             <div class="train">🚆</div>
           </div>
+
           <div class="stats">
             <div class="stat">
-              <small>Available Trains</small><strong id="trainCount">0</strong
-              ><em>Sample routes</em>
+              <small>Available Trains</small>
+              <strong id="trainCount">0</strong>
+              <em>Sample routes</em>
             </div>
+
             <div class="stat">
-              <small>Total Bookings</small><strong id="totalBookings">0</strong
-              ><em>All time</em>
+              <small>Total Bookings</small>
+              <strong id="totalBookings">0</strong>
+              <em>All booking statuses</em>
             </div>
+
             <div class="stat">
-              <small>Confirmed Tickets</small
-              ><strong id="confirmedCount">0</strong
-              ><em>Active reservations</em>
+              <small>Confirmed Tickets</small>
+              <strong id="confirmedCount">0</strong>
+              <em>Active reservations</em>
             </div>
+
             <div class="stat">
-              <small>Seats Remaining</small><strong id="seatCount">0</strong
-              ><em>Across demo trains</em>
+              <small>Seats Remaining</small>
+              <strong id="seatCount">0</strong>
+              <em>Across demo trains</em>
             </div>
           </div>
+
           <div class="layout">
             <div class="panel">
               <h3>Popular Routes</h3>
               <div id="routes"></div>
             </div>
+
             <div class="panel">
               <h3>Quick Actions</h3>
+
               <p class="muted">
                 Start a booking or look up an existing ticket.
               </p>
+
               <div class="actions">
                 <button class="primary" onclick="go('book')">
-                  + Book a Ticket</button
-                ><button class="secondary" onclick="go('pnr')">
-                  Check PNR
+                  + Book a Ticket
                 </button>
+
+                <button class="secondary" onclick="go('pnr')">Check PNR</button>
               </div>
+
               <p class="muted" style="margin-top: 22px">
                 All information is simulated and stored locally in this browser.
               </p>
             </div>
           </div>
         </section>
+
+        <!-- Search Trains -->
         <section id="trains" class="section">
           <div class="hero">
             <div>
               <h2>Find your next train</h2>
-              <p>Explore fictional sample routes and seat availability.</p>
+              <p>Explore sample routes and current demo availability.</p>
             </div>
+
             <div class="train">🔎</div>
           </div>
+
           <div class="panel">
+            <h3>Search Train Routes</h3>
+
             <div class="formgrid">
               <div>
-                <label>From station</label
-                ><select id="searchFrom"></select>
+                <label for="searchFrom">From station</label>
+                <select id="searchFrom">
+                  <option value="">All stations</option>
+                </select>
               </div>
+
               <div>
-                <label>To station</label
-                ><select id="searchTo"></select>
+                <label for="searchTo">To station</label>
+                <select id="searchTo">
+                  <option value="">All stations</option>
+                </select>
               </div>
             </div>
+
             <div class="actions">
               <button class="primary" onclick="searchTrains()">
-                Search Trains</button
-              ><button class="secondary" onclick="resetSearch()">
+                Search Trains
+              </button>
+
+              <button class="secondary" onclick="resetSearch()">
                 Show All
               </button>
             </div>
+
             <div class="tablewrap" style="margin-top: 18px">
               <table>
                 <thead>
@@ -117,81 +166,138 @@
                     <th>Route</th>
                     <th>Departure</th>
                     <th>Fare</th>
-                    <th>Seats</th>
-                    <th></th>
+                    <th>Availability</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody id="trainRows"></tbody>
               </table>
             </div>
+
+            <p class="muted" style="margin-top: 14px">
+              Availability depends on the selected journey date and travel
+              class.
+            </p>
           </div>
         </section>
+
+        <!-- Book Ticket -->
         <section id="book" class="section">
           <div class="hero">
             <div>
               <h2>Book your ticket</h2>
-              <p>Enter passenger details and receive a demo PNR.</p>
+              <p>
+                Enter passenger details to receive a demo PNR and ticket status.
+              </p>
             </div>
+
             <div class="train">🎟️</div>
           </div>
+
           <div class="panel">
             <h3>Passenger & Journey Details</h3>
+
             <div class="formgrid">
               <div>
-                <label>Passenger name</label
-                ><input
+                <label for="passenger">Passenger name</label>
+                <input
                   id="passenger"
-                  placeholder="e.g. Ojaas Gambheera"
+                  type="text"
+                  placeholder="Enter passenger name"
                   maxlength="60"
+                  autocomplete="name"
+                  required
                 />
               </div>
+
               <div>
-                <label>Age</label
-                ><input
+                <label for="age">Age</label>
+                <input
                   id="age"
                   type="number"
                   min="1"
                   max="120"
-                  placeholder="e.g. 22"
+                  placeholder="Enter age"
+                  required
                 />
               </div>
+
               <div>
-                <label>Train</label
-                ><select id="bookTrain"></select>
+                <label for="bookTrain">Train</label>
+                <select id="bookTrain" required></select>
               </div>
+
               <div>
-                <label>Journey date</label
-                ><input id="journeyDate" type="date" />
+                <label for="journeyDate">Journey date</label>
+                <input id="journeyDate" type="date" required />
               </div>
+
               <div>
-                <label>Class</label
-                ><select id="travelClass">
+                <label for="travelClass">Travel class</label>
+                <select id="travelClass">
                   <option value="SL">Sleeper (SL)</option>
                   <option value="3A">AC 3 Tier (3A) — 2× fare</option>
                 </select>
               </div>
+
               <div>
-                <label>Fare estimate</label><input id="fareEstimate" readonly />
+                <label for="fareEstimate">Fare estimate</label>
+                <input id="fareEstimate" type="text" readonly />
               </div>
             </div>
+
             <div class="actions">
               <button class="primary" onclick="bookTicket()">
-                Confirm Demo Booking
+                Book Demo Ticket
               </button>
             </div>
-            <div id="bookNotice" class="notice"></div>
+
+            <div
+              id="bookNotice"
+              class="notice"
+              role="status"
+              aria-live="polite"
+            ></div>
+
+            <div class="panel" style="margin-top: 20px">
+              <h3>Ticket Status Guide</h3>
+
+              <p>
+                <span class="tag">CONFIRMED</span>
+                Seat successfully allocated.
+              </p>
+
+              <p>
+                <span class="tag waiting">WL1, WL2...</span>
+                No confirmed seat; assigned a waiting-list position.
+              </p>
+
+              <p>
+                <span class="tag cancelled">CANCELLED</span>
+                Booking has been cancelled.
+              </p>
+            </div>
           </div>
         </section>
+
+        <!-- My Bookings -->
         <section id="bookings" class="section">
           <div class="hero">
             <div>
               <h2>Manage bookings</h2>
-              <p>Review tickets and cancel confirmed reservations.</p>
+              <p>
+                Review confirmed tickets, waiting-list bookings and
+                cancellations.
+              </p>
             </div>
+
             <div class="train">📋</div>
           </div>
+
           <div class="panel">
             <h3>Booking History</h3>
+
             <div class="tablewrap">
               <table>
                 <thead>
@@ -199,52 +305,80 @@
                     <th>PNR</th>
                     <th>Passenger</th>
                     <th>Train</th>
-                    <th>Date</th>
+                    <th>Journey Date</th>
                     <th>Fare</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody id="bookingRows"></tbody>
               </table>
             </div>
-            <div id="cancelNotice" class="notice"></div>
+
+            <div
+              id="cancelNotice"
+              class="notice"
+              role="status"
+              aria-live="polite"
+            ></div>
           </div>
         </section>
+
+        <!-- PNR Enquiry -->
         <section id="pnr" class="section">
           <div class="hero">
             <div>
               <h2>PNR enquiry</h2>
-              <p>Find your booking using its generated reference number.</p>
+              <p>
+                Find your ticket and check whether it is confirmed,
+                waiting-listed or cancelled.
+              </p>
             </div>
+
             <div class="train">🔍</div>
           </div>
+
           <div class="panel">
             <h3>Check Ticket Status</h3>
+
             <div class="formgrid">
               <div>
-                <label>10-digit demo PNR</label
-                ><input
+                <label for="pnrInput">10-digit demo PNR</label>
+
+                <input
                   id="pnrInput"
+                  type="text"
                   inputmode="numeric"
+                  pattern="[0-9]{10}"
                   maxlength="10"
-                  placeholder="Enter PNR"
+                  placeholder="Enter your PNR"
+                  required
                 />
               </div>
             </div>
+
             <div class="actions">
               <button class="primary" onclick="checkPNR()">Check Status</button>
             </div>
-            <div id="pnrResult" style="margin-top: 18px"></div>
+
+            <div
+              id="pnrResult"
+              style="margin-top: 18px"
+              aria-live="polite"
+            ></div>
           </div>
         </section>
-        <div class="footer">
+
+        <!-- Footer -->
+        <footer class="footer">
           RailOG · Educational IRRS project · Not affiliated with Indian
           Railways or IRCTC
-        </div>
+        </footer>
       </main>
     </div>
-    <!-- Script -->
+
+    <!-- Application JavaScript -->
     <script src="script.js"></script>
   </body>
 </html>

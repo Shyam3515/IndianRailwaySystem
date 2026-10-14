@@ -371,3 +371,19 @@ td {
     font-size: 22px;
   }
 }
+
+/* Waiting List ticket status */
+.tag.waiting {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffe69c;
+  font-weight: 600;
+}
+
+/* Cancelled ticket status */
+.tag.cancelled {
+  background: #fde8e8;
+  color: #b42318;
+  border: 1px solid #f5c2c7;
+  font-weight: 600;
+}
